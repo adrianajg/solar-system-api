@@ -33,12 +33,7 @@ planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 def handle_planets():
     planets_response = []
     for planet in planets:
-        planets_response.append(dict(
-            id=planet.id,
-            name=planet.name,
-            description=planet.description,
-            gravity=planet.gravity
-        ))
+        planets_response.append(planet.to_dict())
 
     return jsonify(planets_response)
 
