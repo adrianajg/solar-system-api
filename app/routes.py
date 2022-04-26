@@ -29,6 +29,7 @@ planets = [
 
 planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
+# GET /planets
 @planets_bp.route("", methods = ["GET"])
 def handle_planets():
     planets_response = [planet.to_dict() for planet in planets]
