@@ -31,14 +31,6 @@ from flask import Blueprint, jsonify, abort, make_response, request
 
 planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
-# GET /planets
-@planets_bp.route("", methods = ["GET"])
-def read_all_planets():
-    all_planets = Planet.query.all()
-    result_list = [planet.to_dict() for planet in all_planets]
-
-    return make_response(jsonify(result_list), 200)
-
 def get_valid_planet(id):
     try:
         id = int(id)
@@ -52,6 +44,17 @@ def get_valid_planet(id):
 
     return planet
 
+
+# GET /planets
+@planets_bp.route("", methods = ["GET"])
+def read_all_planets():
+    all_planets = Planet.query.all()
+    result_list = [planet.to_dict() for planet in all_planets]
+
+    return make_response(jsonify(result_list), 200)
+
+
+# CREATE /planets
 @planets_bp.route("", methods=["POST"])
 def create_planet():
     request_body = request.get_json()
@@ -71,6 +74,33 @@ def create_planet():
 
 # GET /planets/id
 @planets_bp.route("/<id>", methods=("GET",))
-def get_planet(id):
-    planet = validate_planet(id)
-    return jsonify(planet.to_dict())
+def read_planet_by_id(id):
+    planet = get_valid_planet(id)
+    return make_response(jsonify(planet.to_dict()), 200)
+
+# UPDATE /planets/id
+@planets_bp.route("/<id>", methods=["PUT"])
+def update_planet_by_id(id):
+    planet = get_valid_planet(id)
+    request_body = request.get_json()
+
+    if "name" and "description" and "gravity" not in request_body:
+        return make_response(f"Invalid request", 400)
+    
+    planet.name = request_body["name"]
+    planet.description = request_body["description"]
+    planet.gravity=request_body["gravity"]
+
+    db.session.commit()
+
+    return make_response(f"Planet #{planet.id} successfully updated. \
+    Planet: {planet.to_dict()}", 200)
+
+@planets_bp.route("/<id>", methods = ["DELETE"])
+def delete_planet_by_id(id):
+    planet = get_valid_planet(id)
+
+    db.session.delete(planet)
+    db.session.commit()
+
+    return make_response(f"Planet #{planet.id} successfully deleted.")
