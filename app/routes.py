@@ -1,68 +1,74 @@
 from app import db
 from app.models.planet import Planet
 from flask import Blueprint, jsonify, abort, make_response, request
+from .routes_helper import error_message
 
 planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
-def get_valid_planet(id):
+def make_planet_safely(data_dict):
     try:
-        id = int(id)
-    except ValueError:
-        abort(make_response(jsonify(dict(details=f"invalid id: {id}")), 400))
+        return Planet.from_dict(data_dict)
+    except KeyError as err:
+        error_message(f"Missing key: {err}", 400)
 
-    planet = Planet.query.get(id)
+def replace_planet_safely(planet, data_dict):
+    try:
+        planet.replace_details(data_dict)
+    except KeyError as err:
+        error_message(f"Missing key: {err}", 400)
+
+    # planet = Planet.query.get(id)
     
-    if not planet:
-        abort(make_response(jsonify(dict(details=f"planet id {id} not found")), 404))    
+    # if not planet:
+    #     abort(make_response(jsonify(dict(details=f"planet id {id} not found")), 404))    
 
-    return planet
+    # return planet
 
 
 # GET /planets
 @planets_bp.route("", methods = ["GET"])
 def read_all_planets():
-    all_planets = Planet.query.all()
-    result_list = [planet.to_dict() for planet in all_planets]
+    name_param = request.args.get("name")
 
-    return make_response(jsonify(result_list), 200)
+    if name_param:
+        planets = Planet.query.filter_by(name=name_param)
+    else:
+        planets = Planet.query.all()
+
+    result_list = [planet.to_dict() for planet in planets]
+
+    return jsonify(result_list)
 
 
 # CREATE /planets
 @planets_bp.route("", methods=["POST"])
 def create_planet():
     request_body = request.get_json()
-    if "name" and "description" and "gravity" not in request_body:
-        return make_response(f"Invalid request", 400)
+    # if "name" and "description" and "gravity" not in request_body:
+    #     return make_response(f"Invalid request", 400)
+    planet = make_planet_safely(request_body)
 
-    new_planet = Planet(name=request_body["name"],
-                        description=request_body["description"],
-                        gravity=request_body["gravity"]
-                        )
     
-    db.session.add(new_planet)
+    db.session.add(planet)
     db.session.commit()
 
-    return make_response(jsonify(f"Planet {new_planet.name} successfully created", 201))
+    return jsonify(f"Planet {planet.name} successfully created"), 201
 
 
 # GET /planets/id
 @planets_bp.route("/<id>", methods=("GET",))
 def read_planet_by_id(id):
-    planet = get_valid_planet(id)
-    return make_response(jsonify(planet.to_dict()), 200)
+    planet = get_planet_record_by_id(id)
+    return jsonify(planet.to_dict())
 
 # UPDATE /planets/id
 @planets_bp.route("/<id>", methods=["PUT"])
 def update_planet_by_id(id):
-    planet = get_valid_planet(id)
+    planet = get_planet_record_by_id(id)
     request_body = request.get_json()
 
-    if "name" and "description" and "gravity" not in request_body:
-        return make_response(f"Invalid request", 400)
+   replace_planet_safely(planet, request_body)
     
-    planet.name = request_body["name"]
-    planet.description = request_body["description"]
-    planet.gravity=request_body["gravity"]
 
     db.session.commit()
 
