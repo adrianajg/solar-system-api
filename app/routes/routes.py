@@ -33,15 +33,16 @@ def get_planet_record_by_id(id):
 # GET /planets
 @planets_bp.route("", methods = ["GET"])
 def read_all_planets():
-    name_param = request.args.get("name").capitalize()
+    name_param = request.args.get("name")
 
     if name_param:
-        planets = Planet.query.filter_by(name=name_param)
+        planets = Planet.query.filter_by(name=name_param.capitalize())
         
     else:
         planets = Planet.query.all()
 
     result_list = [planet.to_dict() for planet in planets]
+
     if not result_list:
         return jsonify(f"No planet found with name {name_param}"), 404
     return jsonify(result_list)
