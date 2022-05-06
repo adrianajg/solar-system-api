@@ -44,7 +44,7 @@ def read_all_planets():
     result_list = [planet.to_dict() for planet in planets]
 
     if not result_list:
-        return jsonify("No planets found with that name."), 200
+        return jsonify("No planets found with that name.")
     return jsonify(result_list)
 
 
