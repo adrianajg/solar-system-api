@@ -1,30 +1,34 @@
 from app import db
 
-class Planet(db.Model):
+class Moon(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String, nullable=False)
+    size = db.Column(db.Float, nullable=False)
     description = db.Column(db.String, nullable=False)
     gravity = db.Column(db.Float, nullable=False)
-    moons = db.relationship("Moon", back_populates="planet")
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'))
+    planet = db.relationship("Planet", back_populates="moons")
 
     def to_dict(self):
-        moons_info = [moon.to_dict() for moon in self.moons]
+        planet_name = self.planet.name if self.planet else ""
 
-        planet_dict = dict(
+        moon_dict = dict(
             id = self.id,
             name = self.name,
             description = self.description,
+            size = self.size,
             gravity = self.gravity,
-            moons = moons_info
+            planet=planet_name
         )
-        return planet_dict
+        return moon_dict
 
     @classmethod
     def from_dict(cls, data_dict):
         return cls(
             name = data_dict["name"],
             description = data_dict["description"],
-            gravity = data_dict["gravity"]
+            gravity = data_dict["gravity"],
+            size = data_dict["size"]
+            
         )
 
     def replace_details(self, data_dict):
